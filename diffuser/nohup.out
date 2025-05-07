@@ -1,0 +1,320 @@
+----------------------------------------
+[작업 시작] GPU 0
+- 데이터셋: hopper-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 52029
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 1
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 52030
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 53986
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 53987
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 53988
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 53989
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+./_a2_flowmatching_plan_epoch_walk.sh: 18: ./_a2_flowmatching_plan_epoch_walk.sh: Syntax error: "(" unexpected
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 54881
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 54882
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 54883
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 54884
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+./_a2_flowmatching_plan_epoch_walk.sh: line 75: 54881 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:flowmatching/flowmatcher_peF_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/flowmatching_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/flowmatching_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a2_flowmatching_plan_epoch_walk.sh: line 75: 54883 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:flowmatching/flowmatcher_peF_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/flowmatching_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/flowmatching_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a2_flowmatching_plan_epoch_walk.sh: line 75: 54884 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:flowmatching/flowmatcher_peF_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/flowmatching_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/flowmatching_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a2_flowmatching_plan_epoch_walk.sh: line 75: 54882 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:flowmatching/flowmatcher_peF_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/flowmatching_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/flowmatching_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+시드 0에 대한 모든 작업이 완료되었습니다
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56115
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56116
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56117
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56118
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+./_a1_diffuser_plan_epoch_walk.sh: line 69: 53986 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:diffusion/diffuser_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/diffusion_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/diffuser_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a1_diffuser_plan_epoch_walk.sh: line 69: 53987 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:diffusion/diffuser_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/diffusion_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/diffuser_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a1_diffuser_plan_epoch_walk.sh: line 69: 53989 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:diffusion/diffuser_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/diffusion_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/diffuser_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+./_a1_diffuser_plan_epoch_walk.sh: line 69: 53988 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:diffusion/diffuser_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/diffusion_H4_T${n_diffusion_steps}_S0_d0.99" --diffusion_epoch ${diffusion_epochs[$i]} --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path}/${diffusion_epochs[$i]}/ > output/diffuser_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+시드 0에 대한 모든 작업이 완료되었습니다
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56258
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56259
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56260
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56261
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+./_b1_flowmatching_plan_peT_hopwalk.sh: line 62: 52030 Terminated              OMP_NUM_THREADS=24 CUDA_VISIBLE_DEVICES=${GPU_DEVICES[$i]} python scripts/plan_guided.py --dataset ${DATASETS[$i]} --logbase logs --diffusion_loadpath "f:flowmatching/flowmatcher_peT_H4_T${n_diffusion_steps}_S0" --value_loadpath "f:values/flowmatching_H4_T${n_diffusion_steps}_S0_d0.99" --horizon 4 --n_diffusion_steps ${n_diffusion_steps} --seed $seed --n_sample_timesteps ${n_sample_timesteps[$i]} --discount 0.99 --prefix ${prefix_path} > output/flowmatching_plan_${prefix_str}/output_${GPU_DEVICES[$i]}_seed_${seed}_E${diffusion_epochs[$i]}.log 2>&1
+시드 0에 대한 모든 작업이 완료되었습니다
+----------------------------------------
+[작업 시작] GPU 0
+- 데이터셋: hopper-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56585
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 1
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 1
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 56586
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+./_b1_flowmatching_plan_peT_hopwalk.sh: 17: ./_b1_flowmatching_plan_peT_hopwalk.sh: Syntax error: "(" unexpected
+----------------------------------------
+[작업 시작] GPU 0
+- 데이터셋: hopper-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 57499
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 1
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 57500
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 0
+- 데이터셋: hopper-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 57650
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 1
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 57651
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 0
+- 데이터셋: hopper-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58204
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 1
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58205
+- Prefix: flowmatching_plan/peT_hopwalk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58563
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58564
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58565
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58566
+- Prefix: diffusion_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 2
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58998
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 3
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 58999
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 4
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 59000
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
+----------------------------------------
+[작업 시작] GPU 5
+- 데이터셋: walker2d-medium-replay-v2
+- 시드: 0
+- Diffusion Steps: 20
+- Sample Timesteps: 20
+- PID: 59001
+- Prefix: flowmatching_plan/epoch_walk
+----------------------------------------
