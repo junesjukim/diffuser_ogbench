@@ -35,14 +35,15 @@ def n_step_guided_p_sample(
     
     # 모델과 가이드를 현재 디바이스로 이동
     model = model.to(device)
-    guide.model = guide.model.to(device)
-    
+    if guide is not None:
+        guide.model = guide.model.to(device)
     if not is_flowmatching:
         # Diffusion 방식
         model_log_variance = extract(model.posterior_log_variance_clipped, t, x.shape)
         model_std = torch.exp(0.5 * model_log_variance)
         model_var = torch.exp(model_log_variance)
     
+    y = None  # guide가 None일 때를 위해 y를 미리 None으로 초기화
     for _ in range(n_guide_steps):
         with torch.enable_grad():
             if is_flowmatching:
@@ -50,9 +51,12 @@ def n_step_guided_p_sample(
             else:
                 sample_t = (t+1) * (model.n_timesteps // model.n_sample_timesteps) -1
             
-            y, grad = guide.gradients(x, cond, sample_t)
-            # 그래디언트를 현재 디바이스로 이동
-            grad = grad.to(device)
+            if guide is not None:
+                y, grad = guide.gradients(x, cond, sample_t)
+                # 그래디언트를 현재 디바이스로 이동
+                grad = grad.to(device)
+            else:
+                grad = torch.zeros_like(x)
         
         if scale_grad_by_std and not is_flowmatching:
             # diffusion에서만 variance로 스케일링

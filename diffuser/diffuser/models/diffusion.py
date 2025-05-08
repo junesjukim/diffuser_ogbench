@@ -45,7 +45,7 @@ def set_model_mode(prefix):
     return FLOWMATCHING_MODE
 
 @torch.no_grad()
-def default_sample_fn(model, x, cond, t):
+def default_sample_fn(model, x, cond, t, guide=None, n_guide_steps=None):
     """
     통합된 샘플링 함수로, 전역 모드에 따라 다른 샘플링 방식 사용
     """
@@ -395,12 +395,16 @@ class GaussianDiffusion(nn.Module):
             x, values = sample_fn(self, x, cond, t, **sample_kwargs)
             x = apply_conditioning(x, cond, self.action_dim)
 
-            progress.update({'t': i, 'vmin': values.min().item(), 'vmax': values.max().item()})
+            if values is not None:
+                progress.update({'t': i, 'vmin': values.min().item(), 'vmax': values.max().item()})
+            else:
+                progress.update({'t': i})
             if return_chain: chain.append(x)
 
         progress.stamp()
 
-        x, values = sort_by_values(x, values)
+        if values is not None:
+            x, values = sort_by_values(x, values)
         if return_chain: chain = torch.stack(chain, dim=1)
         return Sample(x, values, chain)
 

@@ -33,7 +33,7 @@ def load_config(*loadpath):
     print(config)
     return config
 
-def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, n_sample_timesteps=None):
+def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, n_sample_timesteps=None, renderer=None):
     print("n_sample_timesteps :::::::::::::::::::::: ", n_sample_timesteps)
     dataset_config = load_config(*loadpath, 'dataset_config.pkl')
     render_config = load_config(*loadpath, 'render_config.pkl')
@@ -46,7 +46,8 @@ def load_diffusion(*loadpath, epoch='latest', device='cuda:0', seed=None, n_samp
     trainer_config._dict['results_folder'] = os.path.join(*loadpath)
 
     dataset = dataset_config(seed=seed)
-    renderer = render_config()
+    if renderer is None:
+        renderer = render_config()
     model = model_config()
     
     if n_sample_timesteps is not None:
