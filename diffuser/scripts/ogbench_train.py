@@ -10,19 +10,6 @@ import diffuser.utils as utils
 from diffuser.models.diffusion import set_model_mode
 from diffuser.datasets.ogbench import OGBenchGoalDataset
 
-#-----------------------------------------------------------------------------#
-#-------------------------- conda env test -----------------------------------#
-#-----------------------------------------------------------------------------#
-
-import os
-
-conda_env = os.environ.get("CONDA_DEFAULT_ENV", "Conda environment not detected")
-print("Active conda environment:", conda_env)
-
-#-----------------------------------------------------------------------------#
-#----------------------------------- setup -----------------------------------#
-#-----------------------------------------------------------------------------#
-
 class Parser(utils.Parser):
     dataset: str = 'scene-play-singletask-task2-v0'
     config: str = 'config.locomotion'
@@ -34,7 +21,7 @@ class Parser(utils.Parser):
     use_padding: bool = True
     max_path_length: int = 1000
 
-args = Parser().parse_args('values')
+args = Parser().parse_args('single_task')
 set_model_mode(args.prefix)
 
 #-----------------------------------------------------------------------------#
@@ -50,20 +37,9 @@ dataset_config = utils.Config(
     preprocess_fns=args.preprocess_fns,
     use_padding=args.use_padding,
     max_path_length=args.max_path_length,
-    ## value-specific kwargs
-    discount=args.discount,
-    termination_penalty=args.termination_penalty,
-    normed=args.normed,
-)
-
-render_config = utils.Config(
-    args.renderer,
-    savepath=(args.savepath, 'render_config.pkl'),
-    env=args.dataset,
 )
 
 dataset = dataset_config()
-renderer = render_config()
 
 observation_dim = dataset.observation_dim
 action_dim = dataset.action_dim
@@ -72,17 +48,19 @@ action_dim = dataset.action_dim
 #------------------------------ model & trainer ------------------------------#
 #-----------------------------------------------------------------------------#
 
+# Behavior Policy (Diffusion Model) 설정
 model_config = utils.Config(
     args.model,
     savepath=(args.savepath, 'model_config.pkl'),
     horizon=args.horizon,
     transition_dim=observation_dim + action_dim,
-    cond_dim=observation_dim * 2,  # 현재 상태 + 목표 상태
+    cond_dim=observation_dim,  # 현재 상태만을 조건으로 사용
     dim_mults=args.dim_mults,
     attention=args.attention,
     device=args.device,
 )
 
+# Diffusion 설정
 diffusion_config = utils.Config(
     args.diffusion,
     savepath=(args.savepath, 'diffusion_config.pkl'),
@@ -94,6 +72,7 @@ diffusion_config = utils.Config(
     device=args.device,
 )
 
+# Trainer 설정
 trainer_config = utils.Config(
     utils.Trainer,
     savepath=(args.savepath, 'trainer_config.pkl'),
@@ -110,30 +89,13 @@ trainer_config = utils.Config(
     n_reference=args.n_reference,
 )
 
-#-----------------------------------------------------------------------------#
-#-------------------------------- instantiate --------------------------------#
-#-----------------------------------------------------------------------------#
-
+# 모델 초기화
 model = model_config()
 diffusion = diffusion_config(model)
-trainer = trainer_config(diffusion, dataset, renderer)
+trainer = trainer_config(diffusion, dataset, None)
 
-#-----------------------------------------------------------------------------#
-#------------------------ test forward & backward pass -----------------------#
-#-----------------------------------------------------------------------------#
-
-print('Testing forward...', end=' ', flush=True)
-batch = utils.batchify(dataset[0])
-loss, _ = diffusion.loss(*batch)
-loss.backward()
-print('✓')
-
-#-----------------------------------------------------------------------------#
-#--------------------------------- main loop ---------------------------------#
-#-----------------------------------------------------------------------------#
-
+# 학습 시작
 n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)
-
 for i in range(n_epochs):
     print(f'Epoch {i} / {n_epochs} | {args.savepath}')
     trainer.train(n_train_steps=args.n_steps_per_epoch) 
