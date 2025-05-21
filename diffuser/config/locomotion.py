@@ -45,7 +45,7 @@ base = {
 
         ## serialization
         'logbase': logbase,
-        'prefix': 'diffusion/flowmatching',
+        'prefix': 'diffusion/diffusion',
         'exp_name': watch(args_to_watch),
 
         ## training

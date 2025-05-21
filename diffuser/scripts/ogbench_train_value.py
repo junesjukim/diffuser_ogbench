@@ -20,13 +20,8 @@ class Parser(utils.Parser):
     normalizer: str = 'LimitsNormalizer'
     use_padding: bool = True
     max_path_length: int = 1000
-    # value model specific parameters
-    value_lr: float = 1e-4
-    discount: float = 0.99
-    termination_penalty: float = 0.0
-    normed: bool = True
 
-args = Parser().parse_args('value_guided')
+args = Parser().parse_args('values')
 set_model_mode(args.prefix)
 
 #-----------------------------------------------------------------------------#
@@ -42,13 +37,10 @@ dataset_config = utils.Config(
     preprocess_fns=args.preprocess_fns,
     use_padding=args.use_padding,
     max_path_length=args.max_path_length,
-    ## value-specific kwargs
-    discount=args.discount,
-    termination_penalty=args.termination_penalty,
-    normed=args.normed,
 )
 
 dataset = dataset_config()
+dataset.is_value_training = True  # value 학습 모드 활성화
 
 observation_dim = dataset.observation_dim
 action_dim = dataset.action_dim
@@ -65,7 +57,6 @@ value_model_config = utils.Config(
     transition_dim=observation_dim + action_dim,
     cond_dim=observation_dim,  # 현재 상태만을 조건으로 사용
     dim_mults=args.dim_mults,
-    attention=args.attention,
     device=args.device,
 )
 
@@ -86,7 +77,6 @@ value_trainer_config = utils.Config(
     utils.Trainer,
     savepath=(args.savepath, 'value_trainer_config.pkl'),
     train_batch_size=args.batch_size,
-    train_lr=args.value_lr,
     gradient_accumulate_every=args.gradient_accumulate_every,
     ema_decay=args.ema_decay,
     sample_freq=args.sample_freq,
@@ -102,6 +92,13 @@ value_trainer_config = utils.Config(
 value_model = value_model_config()
 value_diffusion = value_diffusion_config(value_model)
 value_trainer = value_trainer_config(value_diffusion, dataset, None)
+
+# Forward pass 테스트
+print('Testing forward...', end=' ', flush=True)
+batch = utils.batchify(dataset[0])
+loss, _ = value_diffusion.loss(*batch)
+loss.backward()
+print('✓')
 
 # 학습 시작
 n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)

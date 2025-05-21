@@ -21,7 +21,7 @@ class Parser(utils.Parser):
     use_padding: bool = True
     max_path_length: int = 1000
 
-args = Parser().parse_args('single_task')
+args = Parser().parse_args('diffusion')
 set_model_mode(args.prefix)
 
 #-----------------------------------------------------------------------------#

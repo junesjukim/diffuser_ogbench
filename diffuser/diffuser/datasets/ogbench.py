@@ -1,6 +1,7 @@
+from collections import namedtuple
 import numpy as np
 import torch
-from .sequence import SequenceDataset, Batch
+from .sequence import SequenceDataset, Batch, ValueBatch
 from .normalization import DatasetNormalizer
 from .buffer import ReplayBuffer
 
@@ -15,7 +16,9 @@ class OGBenchGoalDataset(SequenceDataset):
         max_n_episodes=10000,
         termination_penalty=0,
         use_padding=True,
-        seed=None
+        seed=None,
+        discount=0.99,  # value 계산을 위한 할인율
+        normed=False    # value 정규화 여부
     ):
         # OGBench 환경 로드
         import ogbench
@@ -30,6 +33,14 @@ class OGBenchGoalDataset(SequenceDataset):
         self.max_path_length = max_path_length
         self.horizon = horizon
         self.use_padding = use_padding
+        
+        # value 관련 설정
+        self.discount = discount
+        self.discounts = self.discount ** np.arange(self.max_path_length)[:,None]
+        self.normed = False
+        if normed:
+            self.vmin, self.vmax = self._get_bounds()
+            self.normed = True
         
         # 에피소드 분할
         self.episodes = self._split_episodes()
@@ -110,6 +121,36 @@ class OGBenchGoalDataset(SequenceDataset):
             normed = self.normalizer(array, key)
             self.fields[f'normed_{key}'] = normed.reshape(self.n_episodes, self.max_path_length, -1)
     
+    def _get_bounds(self):
+        """value의 최소/최대값 계산"""
+        print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
+        vmin = np.inf
+        vmax = -np.inf
+        for i in range(len(self.indices)):
+            value = self._compute_value(i)
+            vmin = min(value, vmin)
+            vmax = max(value, vmax)
+        print('✓')
+        return vmin, vmax
+
+    def normalize_value(self, value):
+        """value 정규화"""
+        ## [0, 1]
+        normed = (value - self.vmin) / (self.vmax - self.vmin)
+        ## [-1, 1]
+        normed = normed * 2 - 1
+        return normed
+
+    def _compute_value(self, idx):
+        """value 계산"""
+        path_ind, start, end = self.indices[idx]
+        rewards = self.fields['rewards'][path_ind, start:]
+        discounts = self.discounts[:len(rewards)]
+        value = (discounts * rewards).sum()
+        if self.normed:
+            value = self.normalize_value(value)
+        return value
+    
     def __len__(self):
         return len(self.indices)
     
@@ -122,4 +163,13 @@ class OGBenchGoalDataset(SequenceDataset):
         conditions = self.get_conditions(observations)
         trajectories = np.concatenate([actions, observations], axis=-1)
         
-        return Batch(trajectories, conditions) 
+        # value 계산
+        value = self._compute_value(idx)
+        value = np.array([value], dtype=np.float32)
+        
+        # 기존 ogbench_train.py와의 호환성을 위해 Batch 반환
+        if not hasattr(self, 'is_value_training') or not self.is_value_training:
+            return Batch(trajectories, conditions)
+        # value 학습 시에는 ValueBatch 반환
+        else:
+            return ValueBatch(trajectories, conditions, value) 
