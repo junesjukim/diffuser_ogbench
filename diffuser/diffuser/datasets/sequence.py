@@ -152,7 +152,11 @@ class ValueDataset(SequenceDataset):
             obs_tensor = torch.FloatTensor(observations).to(self.q_network.device)
             act_tensor = torch.FloatTensor(actions).to(self.q_network.device)
             
-            q_values = self.q_network(obs_tensor, act_tensor)
+            # Q-network는 두 개의 Q-값을 반환하므로 min을 사용
+            q1, q2 = self.q_network(obs_tensor, act_tensor)
+            q_values = torch.min(q1, q2)
+            
+            # V-network는 상태에 대한 가치를 반환
             v_values = self.v_network(obs_tensor)
             
             # Calculate advantages
