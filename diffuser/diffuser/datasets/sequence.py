@@ -104,28 +104,32 @@ class GoalDataset(SequenceDataset):
 
 
 class ValueDataset(SequenceDataset):
-    '''
-        adds a value field to the datapoints for training the value function
-    '''
+    """
+    adds a value field to the datapoints for training the value function
+    """
 
-    def __init__(self, *args, discount=0.99, normed=False, **kwargs):
+    def __init__(self, *args, discount=0.99, normed=False, q_network=None, v_network=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.discount = discount
-        self.discounts = self.discount ** np.arange(self.max_path_length)[:,None]
+        self.discounts = self.discount ** np.arange(self.max_path_length)[:, None]
         self.normed = False
+        self.q_network = q_network
+        self.v_network = v_network
         if normed:
             self.vmin, self.vmax = self._get_bounds()
             self.normed = True
 
     def _get_bounds(self):
-        print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
+        print(
+            "[ datasets/sequence ] Getting value dataset bounds...", end=" ", flush=True
+        )
         vmin = np.inf
         vmax = -np.inf
         for i in range(len(self.indices)):
             value = self.__getitem__(i).values.item()
             vmin = min(value, vmin)
             vmax = max(value, vmax)
-        print('✓')
+        print("✓")
         return vmin, vmax
 
     def normalize_value(self, value):
@@ -138,11 +142,30 @@ class ValueDataset(SequenceDataset):
     def __getitem__(self, idx):
         batch = super().__getitem__(idx)
         path_ind, start, end = self.indices[idx]
-        rewards = self.fields['rewards'][path_ind, start:]
-        discounts = self.discounts[:len(rewards)]
-        value = (discounts * rewards).sum()
-        if self.normed:
-            value = self.normalize_value(value)
-        value = np.array([value], dtype=np.float32)
+        
+        # Get observations and actions for the trajectory
+        observations = self.fields.observations[path_ind, start:end]
+        actions = self.fields.actions[path_ind, start:end]
+        
+        # Calculate Q-values and V-values
+        with torch.no_grad():
+            obs_tensor = torch.FloatTensor(observations).to(self.q_network.device)
+            act_tensor = torch.FloatTensor(actions).to(self.q_network.device)
+            
+            q_values = self.q_network(obs_tensor, act_tensor)
+            v_values = self.v_network(obs_tensor)
+            
+            # Calculate advantages
+            advantages = q_values - v_values
+            
+            # Calculate discounted advantage sum
+            discounts = self.discounts[:len(advantages)]
+            advantage_sum = (discounts * advantages).sum()
+            
+            if self.normed:
+                advantage_sum = self.normalize_value(advantage_sum)
+            
+            value = np.array([advantage_sum], dtype=np.float32)
+            
         value_batch = ValueBatch(*batch, value)
         return value_batch
