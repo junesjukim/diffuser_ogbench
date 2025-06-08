@@ -21,8 +21,8 @@ print("Active conda environment:", conda_env)
 class Parser(utils.Parser):
     dataset: str = 'walker2d-medium-replay-v2'
     config: str = 'config.locomotion'
-    q_path: str = '/home/junseolee/intern/diffuser_ogbench/iql-pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/critic_s470000.pth'
-    v_path: str = '/home/junseolee/intern/diffuser_ogbench/iql-pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/value_s470000.pth'
+    q_path: str = '/home/junseolee/intern/diffuser_ogbench/iql_pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/critic_s700000.pth'
+    v_path: str = '/home/junseolee/intern/diffuser_ogbench/iql_pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/value_s700000.pth'
 
 args = Parser().parse_args('values')
 set_model_mode(args.prefix)

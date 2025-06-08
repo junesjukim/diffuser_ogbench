@@ -126,11 +126,18 @@ class OGBenchGoalDataset(SequenceDataset):
         print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
         vmin = np.inf
         vmax = -np.inf
-        for i in range(len(self.indices)):
+        
+        total = len(self.indices)
+        for i in range(total):
+            if i % 100 == 0:  # 100개마다 진행상황 출력
+                print(f'\r[ datasets/sequence ] Getting value dataset bounds... {i}/{total}', end='', flush=True)
+            
+            # _compute_value를 사용하여 value 계산
             value = self._compute_value(i)
             vmin = min(value, vmin)
             vmax = max(value, vmax)
-        print('✓')
+        
+        print(f'\r[ datasets/sequence ] Getting value dataset bounds... {total}/{total} ✓')
         return vmin, vmax
 
     def normalize_value(self, value):
@@ -142,14 +149,33 @@ class OGBenchGoalDataset(SequenceDataset):
         return normed
 
     def _compute_value(self, idx):
-        """value 계산"""
+        """raw value 계산 (정규화 없음)"""
         path_ind, start, end = self.indices[idx]
-        rewards = self.fields['rewards'][path_ind, start:]
-        discounts = self.discounts[:len(rewards)]
-        value = (discounts * rewards).sum()
-        if self.normed:
-            value = self.normalize_value(value)
-        return value
+        
+        # Get observations and actions for the trajectory
+        observations = self.fields.observations[path_ind, start:end]
+        actions = self.fields.actions[path_ind, start:end]
+        
+        # Calculate Q-values and V-values
+        with torch.no_grad():
+            obs_tensor = torch.FloatTensor(observations).to(self.device)
+            act_tensor = torch.FloatTensor(actions).to(self.device)
+            
+            # Q-network는 두 개의 Q-값을 반환하므로 min을 사용
+            q1, q2 = self.q_network(obs_tensor, act_tensor)
+            q_values = torch.min(q1, q2)
+            
+            # V-network는 상태에 대한 가치를 반환
+            v_values = self.v_network(obs_tensor)
+            
+            # Calculate advantages
+            advantages = q_values - v_values
+            
+            # Calculate discounted advantage sum
+            discounts = torch.FloatTensor(self.discounts[:len(advantages)]).to(self.device)
+            advantage_sum = (discounts * advantages).sum()
+            
+            return advantage_sum.cpu().item()
     
     def __len__(self):
         return len(self.indices)
@@ -172,4 +198,111 @@ class OGBenchGoalDataset(SequenceDataset):
             return Batch(trajectories, conditions)
         # value 학습 시에는 ValueBatch 반환
         else:
-            return ValueBatch(trajectories, conditions, value) 
+            return ValueBatch(trajectories, conditions, value)
+
+class OGBenchValueDataset(OGBenchGoalDataset):
+    """OGBenchGoalDataset을 상속하여 value 계산 기능을 추가한 데이터셋"""
+    
+    def __init__(
+        self,
+        env_name,
+        horizon,
+        normalizer,
+        preprocess_fns,
+        max_path_length,
+        max_n_episodes,
+        termination_penalty,
+        use_padding,
+        seed=None,
+        discount=0.99,
+        normed=False,
+        q_network=None,
+        v_network=None,
+        device='cuda'
+    ):
+        super().__init__(
+            env_name=env_name,
+            horizon=horizon,
+            normalizer=normalizer,
+            preprocess_fns=preprocess_fns,
+            max_path_length=max_path_length,
+            max_n_episodes=max_n_episodes,
+            termination_penalty=termination_penalty,
+            use_padding=use_padding,
+            seed=seed,
+            discount=discount,
+            normed=False  # 부모 클래스에서는 normed를 False로 설정
+        )
+        
+        self.q_network = q_network
+        self.v_network = v_network
+        self.device = device
+        self.normed = normed
+        self.vmin = None
+        self.vmax = None
+    
+    def to(self, device):
+        """데이터셋을 지정된 device로 이동"""
+        self.device = device
+        if self.q_network is not None:
+            self.q_network = self.q_network.to(device)
+        if self.v_network is not None:
+            self.v_network = self.v_network.to(device)
+        return self
+    
+    def _compute_value(self, idx):
+        """raw value 계산 (정규화 없음)"""
+        path_ind, start, end = self.indices[idx]
+        
+        # Get observations and actions for the trajectory
+        observations = self.fields.observations[path_ind, start:end]
+        actions = self.fields.actions[path_ind, start:end]
+        
+        # Calculate Q-values and V-values
+        with torch.no_grad():
+            obs_tensor = torch.FloatTensor(observations).to(self.device)
+            act_tensor = torch.FloatTensor(actions).to(self.device)
+            
+            # Q-network는 두 개의 Q-값을 반환하므로 min을 사용
+            q1, q2 = self.q_network(obs_tensor, act_tensor)
+            q_values = torch.min(q1, q2)
+            
+            # V-network는 상태에 대한 가치를 반환
+            v_values = self.v_network(obs_tensor)
+            
+            # Calculate advantages
+            advantages = q_values - v_values
+            
+            # Calculate discounted advantage sum
+            discounts = torch.FloatTensor(self.discounts[:len(advantages)]).to(self.device)
+            advantage_sum = (discounts * advantages).sum()
+            
+            return advantage_sum.cpu().item()
+    
+    def __getitem__(self, idx):
+        batch = super().__getitem__(idx)
+        
+        # value 계산
+        value = self._compute_value(idx)
+        
+        # 정규화가 필요한 경우에만 정규화
+        if self.normed:
+            # bounds가 계산되지 않은 경우에만 계산
+            if self.vmin is None or self.vmax is None:
+                print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
+                values = []
+                total = len(self.indices)
+                for i in range(total):
+                    if i % 100 == 0:  # 100개마다 진행상황 출력
+                        print(f'\r[ datasets/sequence ] Getting value dataset bounds... {i}/{total}', end='', flush=True)
+                    values.append(self._compute_value(i))
+                
+                self.vmin = np.min(values)
+                self.vmax = np.max(values)
+                print(f'\r[ datasets/sequence ] Getting value dataset bounds... {total}/{total} ✓')
+            
+            value = self.normalize_value(value)
+        
+        value = np.array([value], dtype=np.float32)
+        value_batch = ValueBatch(*batch, value)
+        return value_batch 
