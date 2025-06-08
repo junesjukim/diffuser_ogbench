@@ -1,0 +1,9 @@
+gym==0.18.0
+cffi
+cython<0.30
+lockfile
+glfw
+imageio==2.9.0
+mujoco-py==2.0.2.5
+d4rl
+six

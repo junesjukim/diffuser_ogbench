@@ -1,0 +1,6 @@
+diffuser/nohup.out
+wandb/
+runs/
+# Large data files
+*.npz
+iql-pytorch/data/
