@@ -4,3 +4,4 @@ runs/
 # Large data files
 *.npz
 iql-pytorch/data/
+*.log
