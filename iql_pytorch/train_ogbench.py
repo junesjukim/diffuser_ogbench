@@ -8,7 +8,7 @@ import time
 import json
 import utils
 from utils import VideoRecorder
-import IQL
+from IQL import IQL
 import wandb
 from log import Logger
 import ogbench
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     }
 
     # Initialize policy
-    policy = IQL.IQL(**kwargs)
+    policy = IQL(**kwargs)
 
     # Replay buffer 설정
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)

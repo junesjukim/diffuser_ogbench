@@ -1,4 +1,4 @@
-Task 2: 36207
-Task 3: 36329
-Task 4: 36556
-Task 5: 36762
+Task 2: 32346
+Task 3: 32383
+Task 4: 
+Task 5: 

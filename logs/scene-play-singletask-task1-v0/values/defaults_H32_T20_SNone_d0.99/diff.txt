@@ -1,0 +1,441 @@
+diff --git a/diffuser/diffuser/datasets/ogbench.py b/diffuser/diffuser/datasets/ogbench.py
+index bf9468b..a18158e 100644
+--- a/diffuser/diffuser/datasets/ogbench.py
++++ b/diffuser/diffuser/datasets/ogbench.py
+@@ -126,11 +126,18 @@ class OGBenchGoalDataset(SequenceDataset):
+         print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
+         vmin = np.inf
+         vmax = -np.inf
+-        for i in range(len(self.indices)):
++        
++        total = len(self.indices)
++        for i in range(total):
++            if i % 100 == 0:  # 100개마다 진행상황 출력
++                print(f'\r[ datasets/sequence ] Getting value dataset bounds... {i}/{total}', end='', flush=True)
++            
++            # _compute_value를 사용하여 value 계산
+             value = self._compute_value(i)
+             vmin = min(value, vmin)
+             vmax = max(value, vmax)
+-        print('✓')
++        
++        print(f'\r[ datasets/sequence ] Getting value dataset bounds... {total}/{total} ✓')
+         return vmin, vmax
+ 
+     def normalize_value(self, value):
+@@ -142,14 +149,33 @@ class OGBenchGoalDataset(SequenceDataset):
+         return normed
+ 
+     def _compute_value(self, idx):
+-        """value 계산"""
++        """raw value 계산 (정규화 없음)"""
+         path_ind, start, end = self.indices[idx]
+-        rewards = self.fields['rewards'][path_ind, start:]
+-        discounts = self.discounts[:len(rewards)]
+-        value = (discounts * rewards).sum()
+-        if self.normed:
+-            value = self.normalize_value(value)
+-        return value
++        
++        # Get observations and actions for the trajectory
++        observations = self.fields.observations[path_ind, start:end]
++        actions = self.fields.actions[path_ind, start:end]
++        
++        # Calculate Q-values and V-values
++        with torch.no_grad():
++            obs_tensor = torch.FloatTensor(observations).to(self.device)
++            act_tensor = torch.FloatTensor(actions).to(self.device)
++            
++            # Q-network는 두 개의 Q-값을 반환하므로 min을 사용
++            q1, q2 = self.q_network(obs_tensor, act_tensor)
++            q_values = torch.min(q1, q2)
++            
++            # V-network는 상태에 대한 가치를 반환
++            v_values = self.v_network(obs_tensor)
++            
++            # Calculate advantages
++            advantages = q_values - v_values
++            
++            # Calculate discounted advantage sum
++            discounts = torch.FloatTensor(self.discounts[:len(advantages)]).to(self.device)
++            advantage_sum = (discounts * advantages).sum()
++            
++            return advantage_sum.cpu().item()
+     
+     def __len__(self):
+         return len(self.indices)
+@@ -172,4 +198,111 @@ class OGBenchGoalDataset(SequenceDataset):
+             return Batch(trajectories, conditions)
+         # value 학습 시에는 ValueBatch 반환
+         else:
+-            return ValueBatch(trajectories, conditions, value) 
+\ No newline at end of file
++            return ValueBatch(trajectories, conditions, value)
++
++class OGBenchValueDataset(OGBenchGoalDataset):
++    """OGBenchGoalDataset을 상속하여 value 계산 기능을 추가한 데이터셋"""
++    
++    def __init__(
++        self,
++        env_name,
++        horizon,
++        normalizer,
++        preprocess_fns,
++        max_path_length,
++        max_n_episodes,
++        termination_penalty,
++        use_padding,
++        seed=None,
++        discount=0.99,
++        normed=False,
++        q_network=None,
++        v_network=None,
++        device='cuda'
++    ):
++        super().__init__(
++            env_name=env_name,
++            horizon=horizon,
++            normalizer=normalizer,
++            preprocess_fns=preprocess_fns,
++            max_path_length=max_path_length,
++            max_n_episodes=max_n_episodes,
++            termination_penalty=termination_penalty,
++            use_padding=use_padding,
++            seed=seed,
++            discount=discount,
++            normed=False  # 부모 클래스에서는 normed를 False로 설정
++        )
++        
++        self.q_network = q_network
++        self.v_network = v_network
++        self.device = device
++        self.normed = normed
++        self.vmin = None
++        self.vmax = None
++    
++    def to(self, device):
++        """데이터셋을 지정된 device로 이동"""
++        self.device = device
++        if self.q_network is not None:
++            self.q_network = self.q_network.to(device)
++        if self.v_network is not None:
++            self.v_network = self.v_network.to(device)
++        return self
++    
++    def _compute_value(self, idx):
++        """raw value 계산 (정규화 없음)"""
++        path_ind, start, end = self.indices[idx]
++        
++        # Get observations and actions for the trajectory
++        observations = self.fields.observations[path_ind, start:end]
++        actions = self.fields.actions[path_ind, start:end]
++        
++        # Calculate Q-values and V-values
++        with torch.no_grad():
++            obs_tensor = torch.FloatTensor(observations).to(self.device)
++            act_tensor = torch.FloatTensor(actions).to(self.device)
++            
++            # Q-network는 두 개의 Q-값을 반환하므로 min을 사용
++            q1, q2 = self.q_network(obs_tensor, act_tensor)
++            q_values = torch.min(q1, q2)
++            
++            # V-network는 상태에 대한 가치를 반환
++            v_values = self.v_network(obs_tensor)
++            
++            # Calculate advantages
++            advantages = q_values - v_values
++            
++            # Calculate discounted advantage sum
++            discounts = torch.FloatTensor(self.discounts[:len(advantages)]).to(self.device)
++            advantage_sum = (discounts * advantages).sum()
++            
++            return advantage_sum.cpu().item()
++    
++    def __getitem__(self, idx):
++        batch = super().__getitem__(idx)
++        
++        # value 계산
++        value = self._compute_value(idx)
++        
++        # 정규화가 필요한 경우에만 정규화
++        if self.normed:
++            # bounds가 계산되지 않은 경우에만 계산
++            if self.vmin is None or self.vmax is None:
++                print('[ datasets/sequence ] Getting value dataset bounds...', end=' ', flush=True)
++                values = []
++                total = len(self.indices)
++                for i in range(total):
++                    if i % 100 == 0:  # 100개마다 진행상황 출력
++                        print(f'\r[ datasets/sequence ] Getting value dataset bounds... {i}/{total}', end='', flush=True)
++                    values.append(self._compute_value(i))
++                
++                self.vmin = np.min(values)
++                self.vmax = np.max(values)
++                print(f'\r[ datasets/sequence ] Getting value dataset bounds... {total}/{total} ✓')
++            
++            value = self.normalize_value(value)
++        
++        value = np.array([value], dtype=np.float32)
++        value_batch = ValueBatch(*batch, value)
++        return value_batch 
+\ No newline at end of file
+diff --git a/diffuser/diffuser/utils/training.py b/diffuser/diffuser/utils/training.py
+index b8ce8d5..2d86da5 100644
+--- a/diffuser/diffuser/utils/training.py
++++ b/diffuser/diffuser/utils/training.py
+@@ -71,7 +71,7 @@ class Trainer(object):
+ 
+         self.dataset = dataset
+         self.dataloader = cycle(torch.utils.data.DataLoader(
+-            self.dataset, batch_size=train_batch_size, num_workers=1, shuffle=True, pin_memory=True
++            self.dataset, batch_size=train_batch_size, num_workers=0, shuffle=True, pin_memory=True
+         ))
+         self.dataloader_vis = cycle(torch.utils.data.DataLoader(
+             self.dataset, batch_size=1, num_workers=0, shuffle=True, pin_memory=True
+diff --git a/diffuser/scripts/ogbench_train_value.py b/diffuser/scripts/ogbench_train_value.py
+index d10dcd4..0f439d1 100755
+--- a/diffuser/scripts/ogbench_train_value.py
++++ b/diffuser/scripts/ogbench_train_value.py
+@@ -7,11 +7,16 @@ parent_dir = os.path.dirname(current_dir)
+ sys.path.insert(0, parent_dir)
+ 
+ import diffuser.utils as utils
++import torch
++import ogbench
+ from diffuser.models.diffusion import set_model_mode
+-from diffuser.datasets.ogbench import OGBenchGoalDataset
++from diffuser.datasets.ogbench import OGBenchValueDataset
++from torch.utils.data import DataLoader
++
++from iql_pytorch.critic import Critic, ValueCritic
+ 
+ class Parser(utils.Parser):
+-    dataset: str = 'scene-play-singletask-task3-v0'
++    dataset: str = 'scene-play-singletask-task1-v0'
+     config: str = 'config.locomotion'
+     horizon: int = 64
+     n_diffusion_steps: int = 100
+@@ -20,6 +25,8 @@ class Parser(utils.Parser):
+     normalizer: str = 'LimitsNormalizer'
+     use_padding: bool = True
+     max_path_length: int = 1000
++    q_path: str = '/home/junseolee/intern/diffuser_ogbench/iql_pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/critic_s700000.pth'
++    v_path: str = '/home/junseolee/intern/diffuser_ogbench/iql_pytorch/runs/ogbench_runs/task1/test-task1-06-08-16-31-bs256-s0-t3.0-e0.7/model/value_s700000.pth'
+ 
+ args = Parser().parse_args('values')
+ set_model_mode(args.prefix)
+@@ -28,8 +35,28 @@ set_model_mode(args.prefix)
+ #---------------------------------- dataset ----------------------------------#
+ #-----------------------------------------------------------------------------#
+ 
++# ogbench 환경 로드
++env, _, _ = ogbench.make_env_and_datasets(
++    args.dataset,
++    render_mode='rgb_array'
++)
++state_dim = env.observation_space.shape[0]
++action_dim = env.action_space.shape[0]
++
++# Q와 V network 로드
++q_network = Critic(state_dim, action_dim).to(args.device)
++v_network = ValueCritic(state_dim, 256, 3).to(args.device)
++
++# state_dict 로드
++q_network.load_state_dict(torch.load(args.q_path, map_location=args.device))
++v_network.load_state_dict(torch.load(args.v_path, map_location=args.device))
++
++# 평가 모드로 설정
++q_network.eval()
++v_network.eval()
++
+ dataset_config = utils.Config(
+-    OGBenchGoalDataset,
++    OGBenchValueDataset,
+     savepath=(args.savepath, 'dataset_config.pkl'),
+     env_name=args.dataset,
+     horizon=args.horizon,
+@@ -37,10 +64,16 @@ dataset_config = utils.Config(
+     preprocess_fns=args.preprocess_fns,
+     use_padding=args.use_padding,
+     max_path_length=args.max_path_length,
++    max_n_episodes=1000,  # 최대 에피소드 수
++    termination_penalty=0,  # 종료 페널티
++    q_network=q_network,
++    v_network=v_network,
++    discount=0.99,
++    normed=False,
++    device=args.device
+ )
+ 
+ dataset = dataset_config()
+-dataset.is_value_training = True  # value 학습 모드 활성화
+ 
+ observation_dim = dataset.observation_dim
+ action_dim = dataset.action_dim
+@@ -104,4 +137,13 @@ print('✓')
+ n_epochs = int(args.n_train_steps // args.n_steps_per_epoch)
+ for i in range(n_epochs):
+     print(f'Epoch {i} / {n_epochs} | {args.savepath}')
+-    value_trainer.train(n_train_steps=args.n_steps_per_epoch)
+\ No newline at end of file
++    value_trainer.train(n_train_steps=args.n_steps_per_epoch)
++
++# Create dataloader
++dataloader = DataLoader(
++    dataset,
++    batch_size=args.batch_size,
++    shuffle=True,
++    num_workers=4,
++    multiprocessing_context='spawn'  # CUDA 초기화 문제 해결을 위해 추가
++)
+\ No newline at end of file
+diff --git a/iql_pytorch/actor.py b/iql_pytorch/actor.py
+deleted file mode 100644
+index d63b5ae..0000000
+--- a/iql_pytorch/actor.py
++++ /dev/null
+@@ -1,32 +0,0 @@
+-import torch
+-import torch.nn as nn
+-import torch.distributions
+-from common import MLP
+-
+-
+-class Actor(nn.Module):
+-    """MLP actor network."""
+-
+-    def __init__(
+-        self, state_dim, action_dim, hidden_dim, n_layers, dropout_rate=None,
+-        log_std_min=-10.0, log_std_max=2.0,
+-    ):
+-        super().__init__()
+-
+-        self.mlp = MLP(
+-            state_dim, 2 * action_dim, hidden_dim, n_layers, dropout_rate=dropout_rate
+-        )
+-
+-        self.log_std_min = log_std_min
+-        self.log_std_max = log_std_max
+-
+-    def forward(
+-        self, states
+-    ):
+-        mu, log_std = self.mlp(states).chunk(2, dim=-1)
+-        mu = torch.tanh(mu)
+-        return mu
+-
+-    def get_action(self, states):
+-        mu = self.forward(states)
+-        return mu
+diff --git a/iql_pytorch/common.py b/iql_pytorch/common.py
+deleted file mode 100644
+index 10943b9..0000000
+--- a/iql_pytorch/common.py
++++ /dev/null
+@@ -1,41 +0,0 @@
+-import torch.nn as nn
+-from typing import Callable, Optional
+-
+-from torch.nn.modules.dropout import Dropout
+-
+-
+-class MLP(nn.Module):
+-
+-    def __init__(
+-        self,
+-        in_dim,
+-        out_dim,
+-        hidden_dim,
+-        n_layers,
+-        activations: Callable = nn.ReLU,
+-        activate_final: int = False,
+-        dropout_rate: Optional[float] = None
+-    ) -> None:
+-        super().__init__()
+-
+-        self.affines = []
+-        self.affines.append(nn.Linear(in_dim, hidden_dim))
+-        for i in range(n_layers-2):
+-            self.affines.append(nn.Linear(hidden_dim, hidden_dim))
+-        self.affines.append(nn.Linear(hidden_dim, out_dim))
+-        self.affines = nn.ModuleList(self.affines)
+-
+-        self.activations = activations()
+-        self.activate_final = activate_final
+-        self.dropout_rate = dropout_rate
+-        if dropout_rate is not None:
+-            self.dropout = Dropout(self.dropout_rate)
+-
+-    def forward(self, x):
+-        for i in range(len(self.affines)):
+-            x = self.affines[i](x)
+-            if i != len(self.affines)-1 or self.activate_final:
+-                x = self.activations(x)
+-                if self.dropout_rate is not None:
+-                    x = self.dropout(x)
+-        return x
+diff --git a/iql_pytorch/critic.py b/iql_pytorch/critic.py
+deleted file mode 100644
+index 14d9821..0000000
+--- a/iql_pytorch/critic.py
++++ /dev/null
+@@ -1,59 +0,0 @@
+-import torch
+-import torch.nn as nn
+-import torch.nn.functional as F
+-
+-from common import MLP
+-
+-
+-class ValueCritic(nn.Module):
+-    def __init__(
+-        self,
+-        in_dim,
+-        hidden_dim,
+-        n_layers,
+-        **kwargs
+-    ) -> None:
+-        super().__init__()
+-        self.mlp = MLP(in_dim, 1, hidden_dim, n_layers, **kwargs)
+-
+-    def forward(self, state):
+-        return self.mlp(state)
+-
+-
+-class Critic(nn.Module):
+-    """
+-    From TD3+BC
+-    """
+-
+-    def __init__(self, state_dim, action_dim):
+-        super(Critic, self).__init__()
+-
+-        # Q1 architecture
+-        self.l1 = nn.Linear(state_dim + action_dim, 256)
+-        self.l2 = nn.Linear(256, 256)
+-        self.l3 = nn.Linear(256, 1)
+-
+-        # Q2 architecture
+-        self.l4 = nn.Linear(state_dim + action_dim, 256)
+-        self.l5 = nn.Linear(256, 256)
+-        self.l6 = nn.Linear(256, 1)
+-
+-    def forward(self, state, action):
+-        sa = torch.cat([state, action], 1)
+-
+-        q1 = F.relu(self.l1(sa))
+-        q1 = F.relu(self.l2(q1))
+-        q1 = self.l3(q1)
+-
+-        q2 = F.relu(self.l4(sa))
+-        q2 = F.relu(self.l5(q2))
+-        q2 = self.l6(q2)
+-        return q1, q2
+-
+-    def Q1(self, state, action):
+-        sa = torch.cat([state, action], 1)
+-
+-        q1 = F.relu(self.l1(sa))
+-        q1 = F.relu(self.l2(q1))
+-        q1 = self.l3(q1)
+-        return q1

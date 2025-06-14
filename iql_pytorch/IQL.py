@@ -1,9 +1,8 @@
 import copy
 import torch
-
 import os
-from actor import Actor
-from critic import Critic, ValueCritic
+from iql_pytorch.actor import Actor
+from iql_pytorch.critic import Critic, ValueCritic
 
 
 def loss(diff, expectile=0.8):
@@ -25,7 +24,7 @@ class IQL(object):
         temperature,
     ):
 
-        self.actor = Actor(state_dim, action_dim, 256, 3).to(device)
+        self.actor = Actor(state_dim, action_dim, 512, 5).to(device)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
         self.actor_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.actor_optimizer, T_max=int(1e6))
 
@@ -33,7 +32,7 @@ class IQL(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.value = ValueCritic(state_dim, 256, 3).to(device)
+        self.value = ValueCritic(state_dim, 512, 5).to(device)
         self.value_optimizer = torch.optim.Adam(self.value.parameters(), lr=3e-4)
 
         self.discount = discount

@@ -13,7 +13,7 @@ gpu_map[4]=3  # task 4 -> GPU 3
 gpu_map[5]=4  # task 5 -> GPU 4
 
 # 각 task별 프로세스를 백그라운드로 실행
-for task_id in 1 2 3 4 5; do
+for task_id in 2 3; do
     gpu_id=${gpu_map[$task_id]}
     echo "Starting Task $task_id on GPU $gpu_id"
     
